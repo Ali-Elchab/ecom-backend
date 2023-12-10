@@ -18,9 +18,9 @@ class ProductsController extends Controller
         // $product->sold = $req->sold;
         // $product->save();
 
-        // $req->validate([
-        //     "name" => "unique:products|min:3|max:8"
-        // ]);
+        $req->validate([
+            "name" => "unique:products|min:3|max:8"
+        ]);
         $product_2 = Product::insert([
             "name" => $req->name,
             "description" => $req->description,

@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function createOrder(Request $request)
+    public function create_order(Request $request)
     {
         $data = $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -25,45 +25,48 @@ class OrderController extends Controller
         return response()->json(['message' => 'Order created successfully', 'order' => $order]);
     }
 
-    public function addProductToOrder(Request $request, $orderId)
+    public function add_product_to_order(Request $request, $orderId)
     {
-        $order = Order::findOrFail($orderId);
+        $order = Order::find($orderId);
 
         $data = $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
+            'amount' => 'required|integer|min:1',
         ]);
 
-        $product = Product::findOrFail($data['product_id']);
+        $product = Product::find($data['product_id']);
 
-        $order->products()->attach($product->id, ['quantity' => $data['quantity']]);
-        $order->amount += $product->price * $data['quantity'];
+        $order->products()->attach($product->id, ['amount' => $data['amount']]);
+        $order->amount += $product->price * $data['amount'];
         $order->save();
 
         return response()->json(['message' => 'Product added to order successfully', 'order' => $order]);
     }
 
-    public function getOrder($orderId)
+    public function get_order($orderId)
     {
-        $order = Order::with('products')->findOrFail($orderId);
+        $order = Order::with('products')->find($orderId);
         return response()->json(['order' => $order]);
     }
 
-    public function editOrder(Request $request, $orderId)
+    public function edit_order(Request $request, $orderId)
     {
-        $order = Order::findOrFail($orderId);
+        $order = Order::find($orderId);
 
         $data = $request->validate([
-            'products' => 'required|array',
+            'product_id.*' => 'required|exists:products,id',
+            'amount.*' => 'required|integer|min:1',
         ]);
 
         $order->products()->detach();
         $totalAmount = 0;
 
-        foreach ($data['products'] as $product) {
-            $prod = Product::findOrFail($product['product_id']);
-            $order->products()->attach($prod->id, ['quantity' => $product['quantity']]);
-            $totalAmount += $prod->price * $product['quantity'];
+        foreach ($data['product_id'] as $index => $productId) {
+            $amount = $data['amount'][$index];
+
+            $prod = Product::find($productId);
+            $order->products()->attach($prod->id, ['amount' => $amount]);
+            $totalAmount += $prod->price * $amount;
         }
 
         $order->amount = $totalAmount;
@@ -72,9 +75,9 @@ class OrderController extends Controller
         return response()->json(['message' => 'Order updated successfully', 'order' => $order]);
     }
 
-    public function deleteOrder($orderId)
+    public function delete_order($orderId)
     {
-        $order = Order::findOrFail($orderId);
+        $order = Order::find($orderId);
         $order->products()->detach();
         $order->delete();
 
